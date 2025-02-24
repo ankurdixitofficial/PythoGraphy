@@ -15,19 +15,22 @@ export default function SignUpForm() {
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const data = {
-      name: formData.get('name'),
-      email: formData.get('email'),
-      password: formData.get('password'),
-    };
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const name = formData.get('name') as string;
 
     try {
+      // First, create the account
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+        }),
       });
 
       const result = await response.json();
@@ -36,20 +39,24 @@ export default function SignUpForm() {
         throw new Error(result.error || 'Failed to create account');
       }
 
-      // Automatically sign in after successful signup
+      // Wait a short moment before attempting to sign in
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Then attempt to sign in
       const signInResult = await signIn('credentials', {
-        email: data.email,
-        password: data.password,
+        email: email.toLowerCase(),
+        password: password,
         redirect: false,
       });
 
       if (signInResult?.error) {
-        throw new Error(signInResult.error);
+        throw new Error('Failed to sign in after account creation. Please try signing in manually.');
       }
 
       router.push('/');
     } catch (error: any) {
       setError(error.message);
+      console.error('Signup/Signin error:', error);
     } finally {
       setIsLoading(false);
     }

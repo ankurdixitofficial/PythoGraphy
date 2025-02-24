@@ -1,13 +1,10 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { MongoDBAdapter } from '@auth/mongodb-adapter';
 import bcrypt from 'bcryptjs';
-import clientPromise from './mongodb-adapter';
 import User from '@/models/User';
 import connectDB from './mongodb';
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -16,34 +13,45 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Please enter an email and password');
-        }
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            throw new Error('Please enter an email and password');
+          }
 
-        await connectDB();
-        
-        const user = await User.findOne({ email: credentials.email.toLowerCase() }).select('+password');
-        
-        if (!user) {
-          throw new Error('No user found with this email');
-        }
+          await connectDB();
+          
+          const user = await User.findOne({ 
+            email: credentials.email.toLowerCase() 
+          }).select('+password');
+          
+          if (!user) {
+            console.log('No user found with email:', credentials.email);
+            throw new Error('Invalid email or password');
+          }
 
-        if (!user.password) {
-          throw new Error('Invalid login method');
-        }
+          if (!user.password) {
+            console.log('User has no password set:', user.email);
+            throw new Error('Invalid login method');
+          }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) {
-          throw new Error('Invalid password');
-        }
+          const isValid = await user.comparePassword(credentials.password);
+          if (!isValid) {
+            console.log('Invalid password for user:', user.email);
+            throw new Error('Invalid email or password');
+          }
 
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          image: user.image,
-        };
+          console.log('User authenticated successfully:', user.email);
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            image: user.image,
+          };
+        } catch (error) {
+          console.error('Authentication error:', error);
+          throw error;
+        }
       }
     })
   ],

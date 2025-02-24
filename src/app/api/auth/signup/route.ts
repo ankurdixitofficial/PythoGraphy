@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
@@ -25,7 +24,7 @@ export async function POST(request: Request) {
     await connectDB();
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
@@ -33,24 +32,28 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user
+    // Create user - password will be hashed by the User model's pre-save hook
     const user = await User.create({
       name,
-      email,
-      password: hashedPassword,
+      email: email.toLowerCase(),
+      password,
+      role: 'user'
     });
 
     // Remove password from response
-    const { password: _, ...userWithoutPassword } = user.toObject();
+    const userResponse = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt
+    };
 
-    return NextResponse.json(userWithoutPassword, { status: 201 });
+    return NextResponse.json(userResponse, { status: 201 });
   } catch (error: any) {
     console.error('Signup error:', error);
     return NextResponse.json(
-      { error: 'Something went wrong' },
+      { error: error.message || 'Something went wrong' },
       { status: 500 }
     );
   }

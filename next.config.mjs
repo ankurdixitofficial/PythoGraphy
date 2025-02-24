@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['images.unsplash.com', 'lh3.googleusercontent.com'], // Add Google's domain for profile pictures
+    domains: ['images.unsplash.com'],
   },
   typescript: {
     ignoreBuildErrors: false,

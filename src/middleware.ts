@@ -5,13 +5,19 @@ export function middleware(request: NextRequest) {
   // Get the response
   const response = NextResponse.next();
 
-  // Remove the problematic Permissions-Policy header
-  response.headers.delete('Permissions-Policy');
+  // Add security headers
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:;"
+  );
 
-  // Add our own Permissions-Policy header without the problematic 'browsing-topics'
+  // Set permissive Permissions-Policy
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+    'camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()'
   );
 
   return response;
