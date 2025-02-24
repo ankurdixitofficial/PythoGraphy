@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 export interface IUser {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   image?: string;
   role: 'user' | 'admin';
   bio?: string;
@@ -33,7 +33,7 @@ const UserSchema = new mongoose.Schema<IUser>({
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
+    required: false, // Make password optional for social auth
     minlength: [6, 'Password must be at least 6 characters'],
     select: false, // Don't include password in queries by default
   },
@@ -74,7 +74,7 @@ const UserSchema = new mongoose.Schema<IUser>({
 
 // Hash password before saving
 UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
   
@@ -90,6 +90,7 @@ UserSchema.pre('save', async function(next) {
 // Add method to check password
 UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   try {
+    if (!this.password) return false;
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
     return false;

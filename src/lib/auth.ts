@@ -1,6 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
 import { MongoDBAdapter } from '@auth/mongodb-adapter';
 import bcrypt from 'bcryptjs';
 import clientPromise from './mongodb-adapter';
@@ -10,10 +9,6 @@ import connectDB from './mongodb';
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -34,7 +29,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user.password) {
-          throw new Error('Please sign in with the method you used to create your account');
+          throw new Error('Invalid login method');
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
@@ -55,34 +50,17 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/signin',
     newUser: '/auth/signup',
+    error: '/auth/error',
   },
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
-      }
-      // If the user signed in with Google, create or update their account
-      if (account?.provider === 'google') {
-        await connectDB();
-        const dbUser = await User.findOneAndUpdate(
-          { email: token.email },
-          {
-            $setOnInsert: {
-              name: token.name,
-              email: token.email,
-              image: token.picture,
-              role: 'user',
-            },
-          },
-          { upsert: true, new: true }
-        );
-        token.id = dbUser._id.toString();
-        token.role = dbUser.role;
+        token.role = user.role || 'user';
       }
       return token;
     },
@@ -94,5 +72,6 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
 }; 
