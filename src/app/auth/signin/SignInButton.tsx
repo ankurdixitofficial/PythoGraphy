@@ -1,18 +1,19 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
-import { useState, Suspense } from 'react';
+import { useState } from 'react';
 
-function SignInButtonContent() {
-  const searchParams = useSearchParams();
+export default function SignInButton() {
   const [isLoading, setIsLoading] = useState(false);
-  const callbackUrl = searchParams?.get('callbackUrl') || '/';
 
-  const handleSignIn = async (provider: string) => {
+  const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn(provider, { callbackUrl });
+      await signIn('github', {
+        callbackUrl: window.location.href.includes('callbackUrl=') 
+          ? new URLSearchParams(window.location.search).get('callbackUrl') || '/'
+          : '/'
+      });
     } catch (error) {
       console.error('Sign in error:', error);
     } finally {
@@ -22,7 +23,7 @@ function SignInButtonContent() {
 
   return (
     <button
-      onClick={() => handleSignIn('github')}
+      onClick={handleSignIn}
       disabled={isLoading}
       className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
     >
@@ -37,20 +38,5 @@ function SignInButtonContent() {
         </>
       )}
     </button>
-  );
-}
-
-export default function SignInButton() {
-  return (
-    <Suspense fallback={
-      <button
-        disabled
-        className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gray-800 opacity-50 cursor-not-allowed"
-      >
-        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-      </button>
-    }>
-      <SignInButtonContent />
-    </Suspense>
   );
 } 
