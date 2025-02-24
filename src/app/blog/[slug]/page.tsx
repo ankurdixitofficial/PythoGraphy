@@ -4,11 +4,27 @@ import Layout from '@/components/Layout';
 import connectDB from '@/lib/mongodb';
 import Post from '@/models/Post';
 import { notFound } from 'next/navigation';
+import { Types } from 'mongoose';
 
 interface PageProps {
   params: {
     slug: string;
   };
+}
+
+interface MongoPost {
+  _id: Types.ObjectId;
+  title: string;
+  content: string;
+  excerpt: string;
+  slug: string;
+  coverImage?: string;
+  author: string;
+  tags: string[];
+  status: 'draft' | 'published';
+  createdAt: Date;
+  updatedAt: Date;
+  userId: Types.ObjectId;
 }
 
 interface BlogPost {
@@ -28,14 +44,26 @@ interface BlogPost {
 
 async function getPost(slug: string): Promise<BlogPost | null> {
   await connectDB();
-  const post = await Post.findOne({ slug }).lean();
-  return post ? {
-    ...post,
+  const post = await Post.findOne({ slug }).lean() as MongoPost | null;
+  
+  if (!post) {
+    return null;
+  }
+
+  return {
     _id: post._id.toString(),
+    title: post.title,
+    content: post.content,
+    excerpt: post.excerpt,
+    slug: post.slug,
+    coverImage: post.coverImage,
+    author: post.author,
+    tags: post.tags,
+    status: post.status,
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),
     userId: post.userId.toString()
-  } : null;
+  };
 }
 
 export default async function BlogPost({ params }: PageProps) {
