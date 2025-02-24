@@ -11,10 +11,31 @@ interface PageProps {
   };
 }
 
-async function getPost(slug: string) {
+interface BlogPost {
+  _id: string;
+  title: string;
+  content: string;
+  excerpt: string;
+  slug: string;
+  coverImage?: string;
+  author: string;
+  tags: string[];
+  status: 'draft' | 'published';
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+}
+
+async function getPost(slug: string): Promise<BlogPost | null> {
   await connectDB();
   const post = await Post.findOne({ slug }).lean();
-  return post;
+  return post ? {
+    ...post,
+    _id: post._id.toString(),
+    createdAt: post.createdAt.toISOString(),
+    updatedAt: post.updatedAt.toISOString(),
+    userId: post.userId.toString()
+  } : null;
 }
 
 export default async function BlogPost({ params }: PageProps) {
