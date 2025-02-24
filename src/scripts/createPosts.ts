@@ -1,4 +1,4 @@
-import { connect } from 'mongoose';
+import { connect, connection } from 'mongoose';
 import slugify from 'slugify';
 import Post from '../models/Post';
 import * as dotenv from 'dotenv';
@@ -8,7 +8,7 @@ dotenv.config();
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
+  throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
 const blogPosts = [
@@ -470,11 +470,12 @@ async function createPosts() {
     }
 
     console.log('Successfully created all posts');
-    process.exit(0);
+    await connection.close();
+    console.log('MongoDB connection closed');
   } catch (error) {
     console.error('Error creating posts:', error);
     process.exit(1);
   }
 }
 
-createPosts(); 
+createPosts().catch(console.error); 
