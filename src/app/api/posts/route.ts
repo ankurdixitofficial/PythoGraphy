@@ -5,6 +5,16 @@ import connectDB from '@/lib/mongodb';
 import Post from '@/models/Post';
 import slugify from 'slugify';
 
+interface CreatePostData {
+  title: string;
+  content: string;
+  excerpt: string;
+  coverImage?: string;
+  author?: string;
+  tags?: string | string[];
+  status?: 'published' | 'draft';
+}
+
 function generateSlug(title: string): string {
   return slugify(title, {
     lower: true,      // Convert to lower case
@@ -25,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
     
-    const data = await request.json();
+    const data: CreatePostData = await request.json();
     const { title, content, excerpt, coverImage, author, tags, status } = data;
 
     if (!title || !content || !excerpt) {
@@ -47,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user ID from session
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID not found in session' },
@@ -62,7 +72,7 @@ export async function POST(request: NextRequest) {
       excerpt,
       coverImage,
       author: author || session.user.name,
-      tags: Array.isArray(tags) ? tags : tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+      tags: Array.isArray(tags) ? tags : typeof tags === 'string' ? tags.split(',').map((tag: string) => tag.trim()).filter(Boolean) : [],
       status: status || 'published',
       userId: userId,
     });
