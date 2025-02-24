@@ -2,12 +2,14 @@
 
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function SignUpForm() {
+export default function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const callbackUrl = searchParams?.get('callbackUrl') || '/';
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -15,39 +17,22 @@ export default function SignUpForm() {
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const data = {
-      name: formData.get('name'),
-      email: formData.get('email'),
-      password: formData.get('password'),
-    };
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create account');
-      }
-
-      // Automatically sign in after successful signup
-      const signInResult = await signIn('credentials', {
-        email: data.email,
-        password: data.password,
+      const result = await signIn('credentials', {
+        email,
+        password,
         redirect: false,
+        callbackUrl,
       });
 
-      if (signInResult?.error) {
-        throw new Error(signInResult.error);
+      if (!result?.ok) {
+        throw new Error(result?.error || 'Failed to sign in');
       }
 
-      router.push('/');
+      router.push(callbackUrl);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -58,7 +43,7 @@ export default function SignUpForm() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/' });
+      await signIn('google', { callbackUrl });
     } catch (error) {
       console.error('Google sign in error:', error);
     }
@@ -73,20 +58,6 @@ export default function SignUpForm() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Full name
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            autoComplete="name"
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email address
@@ -109,14 +80,10 @@ export default function SignUpForm() {
             id="password"
             name="password"
             type="password"
-            autoComplete="new-password"
+            autoComplete="current-password"
             required
-            minLength={6}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           />
-          <p className="mt-1 text-sm text-gray-500">
-            Must be at least 6 characters long
-          </p>
         </div>
 
         <div>
@@ -128,7 +95,7 @@ export default function SignUpForm() {
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              'Create account'
+              'Sign in'
             )}
           </button>
         </div>
@@ -167,7 +134,7 @@ export default function SignUpForm() {
               fill="#EA4335"
             />
           </svg>
-          Sign up with Google
+          Sign in with Google
         </button>
       </div>
     </div>
