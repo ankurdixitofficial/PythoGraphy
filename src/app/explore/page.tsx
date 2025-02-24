@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useSearchParams } from 'next/navigation';
 import Layout from '@/components/Layout';
@@ -25,7 +25,7 @@ const categories = [
   'Decoration'
 ];
 
-export default function ExplorePage() {
+function ExploreContent() {
   const searchParams = useSearchParams();
   const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'All');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -83,74 +83,98 @@ export default function ExplorePage() {
   }, [inView, hasMore, loading]);
 
   return (
-    <Layout>
-      <div className="max-w-[1600px] mx-auto px-4">
-        {/* Category Navigation */}
-        <nav className="py-8 border-b border-gray-200 mb-12">
-          <ul className="flex flex-wrap gap-6">
-            {categories.map((category) => (
-              <li key={category}>
-                <button
-                  onClick={() => setActiveCategory(category)}
-                  className={`text-sm uppercase tracking-wider ${
-                    activeCategory === category
-                      ? 'text-black font-medium'
-                      : 'text-gray-500 hover:text-black'
-                  }`}
-                >
-                  {category}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
+    <div className="max-w-[1600px] mx-auto px-4">
+      {/* Category Navigation */}
+      <nav className="py-8 border-b border-gray-200 mb-12">
+        <ul className="flex flex-wrap gap-6">
+          {categories.map((category) => (
+            <li key={category}>
+              <button
+                onClick={() => setActiveCategory(category)}
+                className={`text-sm uppercase tracking-wider ${
+                  activeCategory === category
+                    ? 'text-black font-medium'
+                    : 'text-gray-500 hover:text-black'
+                }`}
+              >
+                {category}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
-        {/* Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
-          {posts.map((post, index) => (
-            <PostCard
-              key={post._id}
-              title={post.title}
-              excerpt={post.excerpt}
-              slug={post.slug}
-              coverImage={post.coverImage}
-              author={post.author}
-              date={post.createdAt}
-              featured={index === 0 && page === 2}
-            />
+      {/* Posts Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
+        {posts.map((post, index) => (
+          <PostCard
+            key={post._id}
+            title={post.title}
+            excerpt={post.excerpt}
+            slug={post.slug}
+            coverImage={post.coverImage}
+            author={post.author}
+            date={post.createdAt}
+            featured={index === 0 && page === 2}
+          />
+        ))}
+      </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="py-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="space-y-4 animate-pulse">
+              <div className="aspect-square bg-gray-100" />
+              <div className="h-4 bg-gray-100 w-1/4" />
+              <div className="h-6 bg-gray-100 w-3/4" />
+              <div className="h-4 bg-gray-100 w-full" />
+            </div>
           ))}
         </div>
+      )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="py-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+      {/* End States */}
+      {!loading && !hasMore && posts.length > 0 && (
+        <div className="text-center py-20 border-t border-gray-200 mt-20">
+          <p className="text-gray-600 uppercase text-sm tracking-wider">End of Stories</p>
+        </div>
+      )}
+
+      {!loading && posts.length === 0 && (
+        <div className="text-center py-20">
+          <p className="text-gray-600 uppercase text-sm tracking-wider">No stories found</p>
+        </div>
+      )}
+
+      {/* Intersection Observer target */}
+      {hasMore && <div ref={ref} className="h-20" />}
+    </div>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Layout>
+      <Suspense fallback={
+        <div className="max-w-[1600px] mx-auto px-4">
+          <div className="py-8 border-b border-gray-200 mb-12">
+            <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"/>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="space-y-4 animate-pulse">
-                <div className="aspect-square bg-gray-100" />
-                <div className="h-4 bg-gray-100 w-1/4" />
-                <div className="h-6 bg-gray-100 w-3/4" />
-                <div className="h-4 bg-gray-100 w-full" />
+                <div className="aspect-square bg-gray-200 rounded-xl" />
+                <div className="h-4 bg-gray-200 w-1/4 rounded" />
+                <div className="h-6 bg-gray-200 w-3/4 rounded" />
+                <div className="h-4 bg-gray-200 w-full rounded" />
               </div>
             ))}
           </div>
-        )}
-
-        {/* End States */}
-        {!loading && !hasMore && posts.length > 0 && (
-          <div className="text-center py-20 border-t border-gray-200 mt-20">
-            <p className="text-gray-600 uppercase text-sm tracking-wider">End of Stories</p>
-          </div>
-        )}
-
-        {!loading && posts.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-gray-600 uppercase text-sm tracking-wider">No stories found</p>
-          </div>
-        )}
-
-        {/* Intersection Observer target */}
-        {hasMore && <div ref={ref} className="h-20" />}
-      </div>
+        </div>
+      }>
+        <ExploreContent />
+      </Suspense>
     </Layout>
   );
 } 
