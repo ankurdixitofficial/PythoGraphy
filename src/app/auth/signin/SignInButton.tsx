@@ -9,11 +9,11 @@ export default function SignInButton() {
   const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn('github', {
-        callbackUrl: window.location.href.includes('callbackUrl=') 
-          ? new URLSearchParams(window.location.search).get('callbackUrl') || '/'
-          : '/'
-      });
+      // Get the callback URL from the URL if it exists
+      const params = new URLSearchParams(window.location.search);
+      const callbackUrl = params.get('callbackUrl') || '/';
+      
+      await signIn('github', { callbackUrl });
     } catch (error) {
       console.error('Sign in error:', error);
     } finally {
