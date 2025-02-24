@@ -2,20 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Cursor styles */
+* {
+  cursor: none !important;
+}
+
+#cursor {
+  transition: width 0.3s ease-out, height 0.3s ease-out;
+}
+
+/* Hover effects */
+a:hover ~ #cursor,
+button:hover ~ #cursor,
+[role="button"]:hover ~ #cursor {
+  width: 6px;
+  height: 6px;
+}
+
+/* Dark background adjustments */
+.bg-[#1a1a1a] #cursor {
+  background-color: white;
 }
