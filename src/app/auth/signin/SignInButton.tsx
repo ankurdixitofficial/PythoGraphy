@@ -1,18 +1,24 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function SignInButton() {
   const [isLoading, setIsLoading] = useState(false);
+  const [callbackUrl, setCallbackUrl] = useState('/');
+
+  useEffect(() => {
+    // Get the callback URL from the URL if it exists
+    const params = new URLSearchParams(window.location.search);
+    const callback = params.get('callbackUrl');
+    if (callback) {
+      setCallbackUrl(callback);
+    }
+  }, []);
 
   const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      // Get the callback URL from the URL if it exists
-      const params = new URLSearchParams(window.location.search);
-      const callbackUrl = params.get('callbackUrl') || '/';
-      
       await signIn('github', { callbackUrl });
     } catch (error) {
       console.error('Sign in error:', error);
