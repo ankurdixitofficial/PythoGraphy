@@ -11,6 +11,9 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
+// MongoDB connection string is now guaranteed to be defined
+const mongoUri: string = MONGODB_URI;
+
 const blogPosts = [
   {
     title: "10 Simple Steps to Start Your Zero-Waste Journey",
@@ -446,7 +449,7 @@ Understanding jazz history helps appreciate its current innovations.`,
 
 async function createPosts() {
   try {
-    await connect(MONGODB_URI);
+    await connect(mongoUri);
     console.log('Connected to MongoDB');
 
     // Clear existing posts
