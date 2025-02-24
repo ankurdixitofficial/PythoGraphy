@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -17,10 +17,17 @@ interface CursorPosition {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
   const [cursorPosition, setCursorPosition] = useState<CursorPosition>({ x: 0, y: 0 });
   const [followerPosition, setFollowerPosition] = useState<CursorPosition>({ x: 0, y: 0 });
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const handleSignOut = async () => {
+    setShowProfileMenu(false);
+    await signOut({ redirect: false });
+    router.push('/');
+  };
 
   useEffect(() => {
     const cursor = document.getElementById('cursor');
@@ -141,10 +148,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         Edit Profile
                       </Link>
                       <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          signOut();
-                        }}
+                        onClick={handleSignOut}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 border-t border-gray-200"
                       >
                         Sign Out
