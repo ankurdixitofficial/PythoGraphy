@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-function ErrorMessage() {
+function ErrorMessageContent() {
   const searchParams = useSearchParams();
   const error = searchParams?.get('error');
 
@@ -49,27 +49,27 @@ function ErrorMessage() {
   );
 }
 
-function LoadingFallback() {
+function ErrorMessage() {
   return (
-    <div className="max-w-md w-full text-center">
-      <div className="rounded-lg bg-white p-8 shadow-sm">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-full mb-6"></div>
-          <div className="space-y-4">
-            <div className="h-10 bg-gray-200 rounded"></div>
-            <div className="h-10 bg-gray-200 rounded"></div>
+    <Suspense fallback={
+      <div className="max-w-md w-full text-center">
+        <div className="rounded-lg bg-white p-8 shadow-sm">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-full mb-6"></div>
+            <div className="space-y-4">
+              <div className="h-10 bg-gray-200 rounded"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    }>
+      <ErrorMessageContent />
+    </Suspense>
   );
 }
 
 export default function ErrorContent() {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <ErrorMessage />
-    </Suspense>
-  );
+  return <ErrorMessage />;
 } 
