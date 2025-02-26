@@ -16,42 +16,54 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Please enter an email and password');
-        }
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.error('Missing credentials');
+            return null;
+          }
 
-        await connectDB();
-        
-        // Find user and explicitly select password field
-        const user = await User.findOne({ email: credentials.email.toLowerCase() }).select('+password');
-        
-        if (!user) {
-          throw new Error('No user found with this email');
-        }
+          await connectDB();
+          
+          // Find user and explicitly select password field
+          const user = await User.findOne({ 
+            email: credentials.email.toLowerCase() 
+          }).select('+password');
+          
+          if (!user) {
+            console.error('No user found with email:', credentials.email);
+            return null;
+          }
 
-        if (!user.password) {
-          throw new Error('Invalid user data');
-        }
+          if (!user.password) {
+            console.error('User has no password set:', user.email);
+            return null;
+          }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) {
-          throw new Error('Invalid password');
-        }
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) {
+            console.error('Invalid password for user:', user.email);
+            return null;
+          }
 
-        // Return user without password
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          image: user.image,
-        };
+          console.log('User authenticated successfully:', user.email);
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            image: user.image,
+          };
+        } catch (error) {
+          console.error('Authentication error:', error);
+          return null;
+        }
       }
     })
   ],
   pages: {
     signIn: '/auth/signin',
     newUser: '/auth/signup',
+    error: '/auth/error',
   },
   session: {
     strategy: 'jwt',
@@ -61,7 +73,7 @@ const handler = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = user.role || 'user';
       }
       return token;
     },
@@ -73,6 +85,7 @@ const handler = NextAuth({
       return session;
     },
   },
+  debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
 });
 

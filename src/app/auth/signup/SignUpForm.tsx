@@ -14,49 +14,95 @@ export default function SignUpForm() {
     setError('');
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const name = formData.get('name') as string;
-
     try {
+      const formData = new FormData(e.currentTarget);
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+      const name = formData.get('name') as string;
+
+      // Validate input
+      if (!email || !password || !name) {
+        throw new Error('Please fill in all fields');
+      }
+
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+
       // First, create the account
+      console.log('Attempting to create account...');
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           name,
-          email,
+          email: email.toLowerCase(),
           password,
         }),
       });
 
-      const result = await response.json();
+      // Log response details for debugging
+      console.log('Signup Response Status:', response.status);
+      console.log('Signup Response Headers:', Object.fromEntries(response.headers.entries()));
+      
+      // Check content type
+      const contentType = response.headers.get('content-type');
+      console.log('Response Content-Type:', contentType);
+      
+      if (!contentType?.includes('application/json')) {
+        console.error('Invalid content type received:', contentType);
+        throw new Error('Server returned an invalid response type');
+      }
+
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Response parsing error:', e);
+        console.error('Non-JSON response received:', responseText);
+        throw new Error('The server returned an invalid response format');
+      }
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create account');
+        throw new Error(data.error || 'Failed to create account');
       }
-
-      // Wait a short moment before attempting to sign in
-      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Then attempt to sign in
+      console.log('Account created, attempting to sign in...');
       const signInResult = await signIn('credentials', {
         email: email.toLowerCase(),
-        password: password,
+        password,
         redirect: false,
+        callbackUrl: '/'
       });
 
-      if (signInResult?.error) {
-        throw new Error('Failed to sign in after account creation. Please try signing in manually.');
+      console.log('SignIn Result:', signInResult);
+
+      if (!signInResult) {
+        throw new Error('No response from sign-in attempt');
       }
 
-      router.push('/');
+      if (signInResult.error) {
+        console.error('Sign-in error:', signInResult.error);
+        throw new Error(signInResult.error);
+      }
+
+      if (signInResult.ok) {
+        console.log('Sign-in successful, redirecting...');
+        router.push('/');
+        router.refresh();
+      } else {
+        throw new Error('Sign-in failed');
+      }
     } catch (error: any) {
-      setError(error.message);
-      console.error('Signup/Signin error:', error);
+      console.error('Full error details:', error);
+      setError(error.message || 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
